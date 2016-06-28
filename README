@@ -1,0 +1,36 @@
+Implementation of "Launch Interceptor Program: Requirements
+Specification" in Haskell:
+
+http://www.monperrus.net/martin/decide.pdf
+
+# Compilation
+
+Requires aeson 0.8.0.2-3, probably works with later
+versions. Installation under Ubuntu:
+
+   $ sudo apt-get install libghc-aeson-dev
+
+To compile with GHC:
+
+   $ ghc Main.hs
+
+# Usage
+
+   $ ./Main <input.json>
+
+To run on all test input:
+
+   $ find input-DECIDE/ -exec ./Main \{\} \;
+
+# TODO:
+
+ - Verification:
+   - [ ] check in circle
+   - [ ] write cases for each lic
+   - [X] check small functions (calc_fuv, calc_pum, calc_launch)
+   - [X] check the LVM matrix
+ - Write README with install instructions
+ - generate test-results
+ - upload to github
+ - send email to teacher?
+
