@@ -13,7 +13,7 @@ import Test.QuickCheck
 
 import Types
 import TestInput
-import Trig
+import Geom
 import List
 
 type Lic = Input -> Bool

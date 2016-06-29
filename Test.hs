@@ -7,7 +7,7 @@ import System.Directory
 import Types
 import List
 import Main
-import Trig
+import Geom
 import TestInput
 
 import Prelude hiding (lcm)
@@ -17,25 +17,30 @@ import Prelude hiding (lcm)
 bigCheck p = quickCheckWith (stdArgs { maxSuccess = 5000 }) p
 
 
-checkCircleThing :: Point -> Point -> Point -> Point -> Double -> Property
-checkCircleThing p1 p2 p3 c rad =
-  areInCircle p1 p2 p3 c rad ==> (inSomeCircle rad [p1, p2, p3])
+type CFun = Double -> [Point] -> Bool
 
-checkCircleThing' :: Point -> Point -> Point -> Point -> Double -> Property
-checkCircleThing' p1 p2 p3 c rad =
-  not (inSomeCircle rad [p1, p2, p3]) ==>
+checkCircleThing :: CFun -> Point -> Point -> Point -> Point -> Double -> Property
+checkCircleThing cfun p1 p2 p3 c rad =
+  areInCircle p1 p2 p3 c rad ==> (cfun rad [p1, p2, p3])
+
+checkCircleThing' :: CFun -> Point -> Point -> Point -> Point -> Double -> Property
+checkCircleThing' cfun p1 p2 p3 c rad =
+  not (cfun rad [p1, p2, p3]) ==>
   not (areInCircle p1 p2 p3 c rad)
 
-
-checkCircleThing'' :: Point -> Point -> Point -> Property
-checkCircleThing'' p1' p2' p3' =
+checkCircleThing'' :: CFun -> Point -> Point -> Point -> Property
+checkCircleThing'' cfun p1' p2' p3' =
   (d1 <= 1.0) && (d2 <= 1.0) && (d3 <= 1.0) ==>
-  areInCircle p1 p2 p3 (0,0) 1.0 && (inSomeCircle 1.0 [p1, p2, p3])
+  areInCircle p1 p2 p3 (0,0) 1.0 && (cfun 1.0 [p1, p2, p3])
   where trDbl p = p - (fromInteger $ truncate p)
         trPt (a,b) = (trDbl a, trDbl b)
         (p1,p2,p3) = (trPt p1', trPt p2', trPt p3')
         (d1,d2,d3) = let f = (distance (0,0)) in
                      (f p1,f p2,f p3)
+
+checkCircleThingComp :: CFun -> CFun -> Point -> Point -> Point -> Double -> Bool
+checkCircleThingComp cf cf' p1 p2 p3 r =
+  (cf r [p1,p2,p3]) == (cf' r [p1,p2,p3])
 
 -- generate a center, 3 pts, get distances from center to
 -- points. check that inCircle with max of distance is true. it is
@@ -119,17 +124,48 @@ licTests :: [[LicTest]]
 licTests =
   [
     -- 0
-    [],
+    [(test_input { points = [(-2,-2), (1,2), (1,1)],
+                   parameters = (parameters test_input) { length1 = 1 }}, True),
+     (test_input { points = [(0,0), (0,4)],
+                   parameters = (parameters test_input) { length1 = 1 }}, False),
+     (test_input { points = [(-2,-2), (1,2), (0,0), (1,1)],
+                   parameters = (parameters test_input) { length1 = 1 }}, False)],
     -- 1
-    [],
+    [(test_input { points = [(-1,0), (0,1), (1,0)],
+                   parameters = (parameters test_input) { radius1 = 1 }}, False),
+     (test_input { points = [(-1,0), (0,1), (1,0)],
+                   parameters = (parameters test_input) { radius1 = 0.5 }}, True),
+     (test_input { points = [(-1,0), (-1,-1), (0,1), (1,0)],
+                   parameters = (parameters test_input) { radius1 = 0.5 }}, True)],
     -- 2
-    [],
+    [(test_input { points = [(-1,-1), (0,0), (1,1)],
+                   -- angle == 90 == pi
+                   parameters = (parameters test_input) { epsilon = 0.1 }}, False),
+     (test_input { points = [(-0.001,1), (0,0), (0.001,1)],
+                   -- angle == close to 0
+                   parameters = (parameters test_input) { epsilon = 0.1 }}, True),
+     (test_input { points = [(-0.001,1), (0,0), (0,0), (0.001,1)],
+                   -- angle == close to 0
+                   parameters = (parameters test_input) { epsilon = 0.1 }}, False)
+     ],
     -- 3
-    [],
+    [(test_input { points = [(0,0), (1,0), (1,1)],
+                   parameters = (parameters test_input) { area1 = 0.5 }}, False),
+     (test_input { points = [(0,0), (1,0), (1,1)],
+                   parameters = (parameters test_input) { area1 = 0.4 }}, True),
+     (test_input { points = [(0,0), (1,0), (1,0), (1,1)],
+                    parameters = (parameters test_input) { area1 = 0.4 }}, False)],
     -- 4
-    [],
+    [(test_input { points = [(0.5,0.5), (-0.5,0.5), (-0.5,-0.5), (0.5,-0.5)],
+                    parameters = (parameters test_input) { quads = 3,
+                                                           q_pts = 4}}, True),
+    (test_input { points = [(0.5,0.5), (-0.5,0.5), (-0.5,-0.5), (-0.5,-0.5), (0.5,-0.5)],
+                    parameters = (parameters test_input) { quads = 3,
+                                                           q_pts = 4}}, False)],
     -- 5
-    [],
+    [(test_input { points = [(1.0,0.5), (0.5,0.5)]}, True),
+     (test_input { points = [(0.5,0.5), (1.0,0.5)]}, False)
+    ],
     -- 6
     [
       (test_input { points = [(-1,0),(0,1),(1,0)],
@@ -139,7 +175,13 @@ licTests =
       (test_input { points = [(10,10),(0,0),(0,1),(0,6),(0,0),(10,10)],
                     parameters = (parameters test_input) { n_pts = 4, dist = 5 }}, True),
       (test_input { numpoints = 1 }, False)
-    ]
+    ],
+    [(test_input { points = [(-2,-2), (1,2), (1,2), (1,2), (1,2), (1,1)],
+                   parameters = (parameters test_input) { length1 = 1,
+                                                          k_pts = 3}}, True),
+    (test_input { points = [(0,2), (1,2), (1,2), (1,2), (1,1)],
+                   parameters = (parameters test_input) { length1 = 1,
+                                                          k_pts = 3}}, False)]
   ]
 
 

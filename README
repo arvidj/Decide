@@ -29,8 +29,7 @@ To run on all test input:
    - [ ] write cases for each lic
    - [X] check small functions (calc_fuv, calc_pum, calc_launch)
    - [X] check the LVM matrix
- - Write README with install instructions
- - generate test-results
- - upload to github
- - send email to teacher?
+ - [X] Write README with install instructions
+ - [ ] generate test-results
+ - [X] upload to github
 
